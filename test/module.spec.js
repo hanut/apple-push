@@ -1,9 +1,9 @@
 const expect = require('chai').expect;
 const ApplePush = require('../index')
 
-const teamID = "DEF123GHIJ";
-const keyID = "ABCD1234";
-const keyValue = "elemenohpee";
+const teamid = process.env.teamid || throw new Error('teamid not set in env');
+const keyid = process.env.keyid || throw new Error('keyid not set in env');
+const key = process.env.key || throw new Error('key not set in env');
 
 
 describe('Test Suit for apple-push module', function() {
