@@ -33,7 +33,7 @@ describe('Test Suit for apple-push module', function() {
 		it('should contain `push` method', function() {
 			expect(apns.push).is.a('function');
 		});
-		
+
 		it('should contain `createToken` method', function() {
 			expect(apns.createToken).is.a('function');
 		});
@@ -127,7 +127,8 @@ describe('Test Suit for apple-push module', function() {
 		});
 
 		context('Graceful handling of request errors', function() {
-			it('should handle invalid jwt error', function(done) {
+			it('should handle 403 errors', function(done) {
+				this.timeout(10000);
 				const payload = {
 					"aps" : {
 						"badge" : 9,
@@ -136,6 +137,24 @@ describe('Test Suit for apple-push module', function() {
 					"messageID" : "ABCDEFGHIJ"
 				}
 				apns.push(payload, 'token', devicetoken, {topic: "com.patch.NotificationReceiverPatch"}).then(res => {
+					done(new Error('Failed to handle the 403 error'));
+				}).catch(error => {
+					done();
+				});
+			});
+		});
+
+		context('Successful Request', function() {
+			it('should return expected values', function(done) {
+				this.timeout(10000);
+				const payload = {
+					"aps" : {
+						"badge" : 9,
+						"sound" : "bingbong.aiff"
+					},
+					"messageID" : "ABCDEFGHIJ"
+				}
+				apns.push(payload, token, devicetoken, {topic: "com.patch.NotificationReceiverPatch"}).then(res => {
 					done();
 				}).catch(done);
 			});

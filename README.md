@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/hanut/apple-push.svg?branch=master)](https://travis-ci.org/hanut/apple-push)
+[![Coverage Status](https://coveralls.io/repos/github/hanut/apple-push/badge.svg?branch=master)](https://coveralls.io/github/hanut/apple-push?branch=master)
+
 # apple-push
 Node.js module for sending push notifications via the apple push notification service. 
 

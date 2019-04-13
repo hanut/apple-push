@@ -70,6 +70,7 @@ module.exports = class ApplePush {
 			}
 
 			const req = session.request(headers);
+			
 			req.on('aborted', error => {
 				req.close();
 				sessionErrorHandler(error);
@@ -81,8 +82,10 @@ module.exports = class ApplePush {
 						let data = '';
 		        		req.on('data', chunk => { data += chunk; }).on('end', () => {
 		             		try {
-		             			console.log(data);
-		               			const response = JSON.parse(data);
+		               			const response = {
+		               				response: data,
+		               				apnsId: headers['apns-id']
+		               			};
 		               			resolve(response);
 		             		} catch (err) { 
 		             			reject(err); 
@@ -124,8 +127,11 @@ module.exports = class ApplePush {
 						reject(new Error(`The server is shutting down and unavailable.`));
 						break;
 					}
-					default: new Error(`Remote server responded with error code ${headers[':status']}`); break;
+					default: new Error(`Remote server responded with error code ${headers[':status']}`); 
+					break;
 				}
+				req.close();
+				session.destroy();
 			});
 			const postbody = querystring.stringify(payload);
 	      	req.end(postbody);
