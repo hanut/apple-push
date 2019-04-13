@@ -12,7 +12,8 @@
     "mocha": "^6.1.3"
   },
   "scripts": {
-    "test": "nyc mocha"
+    "test": "mocha",
+    "coverage": "nyc mocha"
   },
   "keywords": [
     "apple",
