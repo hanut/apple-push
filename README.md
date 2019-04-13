@@ -1,5 +1,8 @@
 # apple-push
-Node.js module for sending push notifications via the apple push notification service. This module uses token based authentication and implements a RESTful interface instead of using long lived socket connections.
+Node.js module for sending push notifications via the apple push notification service. 
+
+It uses token based authentication and aims to be *a 100% compliant* with Apple's
+specifications.
 
 ## Running Tests
 To run the tests included you need to setup the environment 
@@ -10,7 +13,9 @@ with something like the following -
 export NODE_ENV='debug'
 
 # The teamid, keyid and key are required
-export teamid="ABCD123EFG"
-export keyid="GHI123JKL"
-export key="elemenohpee"
+export teamid="<your apple developer teamid>"
+export key="<your token signing key>"
+export keyid="<your token signing key's id>"
+export bundleid="<your apps bundleid>"
+export devicetoken="<your ios device token>"
 ````
