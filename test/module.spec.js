@@ -29,14 +29,13 @@ describe('Test Suit for apple-push module', function() {
 		it('should contain `url` attribute', function() {
 			expect(apns.url).is.a('string');
 		});
-		it('should contain `post` method', function() {
-			expect(apns.post).is.a('function');
-		});
-		it('should contain `createToken` method', function() {
-			expect(apns.createToken).is.a('function');
-		});
+
 		it('should contain `push` method', function() {
 			expect(apns.push).is.a('function');
+		});
+		
+		it('should contain `createToken` method', function() {
+			expect(apns.createToken).is.a('function');
 		});
 	});
 
