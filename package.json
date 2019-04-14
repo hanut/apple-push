@@ -14,7 +14,7 @@
     "uuid5": "^1.0.2"
   },
   "scripts": {
-    "test": "mocha --exit",
+    "test": "nyc mocha --exit",
     "coverage": "nyc report --reporter=text-lcov | npx coveralls"
   },
   "keywords": [
