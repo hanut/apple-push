@@ -1,11 +1,13 @@
 const expect = require('chai').expect;
 const ApplePush = require('../index');
 const jwt = require('jsonwebtoken');
+let uuid5 = require("uuid5");
 
 const teamid = process.env.teamid || false;
 const keyid = process.env.keyid || false;
 const key = process.env.key || false;
 const devicetoken = process.env.devicetoken || false;
+const bundleid = process.env.bundleid || false;
 
 if (!teamid || !keyid || !key || !devicetoken) {
 	console.error('Please setup the test environment correctly');
@@ -124,6 +126,14 @@ describe('Test Suit for apple-push module', function() {
 					done();	
 				});
 			});
+
+			it('should check for invalid/missing bundleId', function(done) {
+				apns.push('abcd', 'qwe123', 'naksdk').then(() => {
+					done(new Error('Check for missing bundleId failed'));	
+				}).catch(error => {
+					done();	
+				});
+			});
 		});
 
 		context('Graceful handling of request errors', function() {
@@ -144,8 +154,8 @@ describe('Test Suit for apple-push module', function() {
 			});
 		});
 
-		context('Successful Request', function() {
-			it('should return expected values', function(done) {
+		context('Successful Requests', function() {
+			it('should resolve successfully', function(done) {
 				this.timeout(10000);
 				const payload = {
 					"aps" : {
@@ -154,7 +164,27 @@ describe('Test Suit for apple-push module', function() {
 					},
 					"messageID" : "ABCDEFGHIJ"
 				}
-				apns.push(payload, token, devicetoken, {topic: "com.patch.NotificationReceiverPatch"}).then(res => {
+				apns.push(payload, token, devicetoken, bundleid).then(res => {
+					done();
+				}).catch(done);
+			});
+
+			it('should use the given options', function(done) {
+				this.timeout(10000);
+				const payload = {
+					"aps" : {
+						"badge" : 9,
+						"sound" : "bingbong.aiff"
+					},
+					"messageID" : "ABCDEFGHIJ"
+				};
+				const options = {
+					id: uuid5(bundleid + Date.now()),
+					expiration: 30,
+					priority: 5,
+					collapseId: `${Math.ceil(Math.random() * 10000)}`
+				};
+				apns.push(payload, token, devicetoken, bundleid, options).then(res => {
 					done();
 				}).catch(done);
 			});

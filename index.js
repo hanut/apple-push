@@ -31,7 +31,7 @@ module.exports = class ApplePush {
 	 * @return {Promise} A promise that resolves if the request is successful or rejects
 	 * with an error 
 	 */
-	push (payload, jwt, deviceToken, options) {
+	push (payload, jwt, deviceToken, bundleId, options) {
 		return new Promise((resolve, reject) => {
 			if (!payload) {
 				reject(Error('Parameter `payload` is required'));
@@ -43,6 +43,10 @@ module.exports = class ApplePush {
 			}
 			if (!deviceToken) {
 				reject(Error('Parameter `deviceToken` is required'));
+				return;	
+			}
+			if (!bundleId) {
+				reject(Error('Parameter `bundleId` is required'));
 				return;	
 			}
 			const session = http2.connect(this.url);
@@ -58,14 +62,14 @@ module.exports = class ApplePush {
 			let headers = { 
 				':path': `/3/device/${deviceToken}`,
 				':method': 'POST',
-				'authorization': `bearer ${jwt}`
+				'authorization': `bearer ${jwt}`,
+				'apns-topic': bundleId
 			};
 
 			if (options) {
 				if (options.id) { headers['apns-id'] = options.id; }
 				if (options.expiration) { headers['apns-expiration'] = options.expiration; }
 				if (options.priority) { headers['apns-priority'] = options.priority; }
-				if (options.topic) { headers['apns-topic'] = options.topic; }
 				if (options.collapseId) { headers['apns-collapse-id'] = options.collapseId; }
 			}
 
