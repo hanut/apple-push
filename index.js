@@ -12,13 +12,31 @@ module.exports = class ApplePush {
 	 * 
 	 * @return {ApplePush} A new instance of type ApplePush
 	 */
-	constructor() {
-		if (process.env.NODE_ENV === "production") {
-			this.url = "https://api.push.apple.com:443";
-		} else {
-			this.url = "https://api.sandbox.push.apple.com:443";
-		}
-	}
+	 constructor() {
+	 	if (process.env.NODE_ENV === "production") {
+	 		this.url = "https://api.push.apple.com";
+	 	} else {
+	 		this.url = "https://api.sandbox.push.apple.com";
+	 	}
+
+	 	/**
+	 	 * A map of the various network errors that can be encountered
+	 	 * while sending out the push to APNS.
+	 	 * 
+	 	 * @type {Object}
+	 	 */
+	 	 this.ERRORS = {
+	 	 	400: "Bad request",
+	 	 	403: "There was an error with the certificate or with the provider’s authentication token.",
+	 	 	405: "The request used an invalid :method value. Only POST requests are supported.",
+	 	 	410: "The device token is no longer active for the topic.",
+	 	 	413: "The notification payload was too large.",
+	 	 	429: "The server received too many requests for the same device token.",
+	 	 	500: "Internal server error.",
+	 	 	503: "The server is shutting down and unavailable."
+	 	 };
+
+	 	}
 
 	/**
 	 * Sends a new push notification via the APNS service
@@ -31,116 +49,83 @@ module.exports = class ApplePush {
 	 * @return {Promise} A promise that resolves if the request is successful or rejects
 	 * with an error 
 	 */
-	push (payload, jwt, deviceToken, bundleId, options) {
-		return new Promise((resolve, reject) => {
-			if (!payload) {
-				reject(Error('Parameter `payload` is required'));
-				return;
-			}
-			if (!jwt) {
-				reject(Error('Parameter `jwt` is required'));
-				return;	
-			}
-			if (!deviceToken) {
-				reject(Error('Parameter `deviceToken` is required'));
-				return;	
-			}
-			if (!bundleId) {
-				reject(Error('Parameter `bundleId` is required'));
-				return;	
-			}
-			const session = http2.connect(this.url);
-			const sessionErrorHandler = (error) => {
-				session.destroy();
-				reject(error);
-			}
+	 push (payload, jwt, deviceToken, bundleId, options) {
+	 	return new Promise((resolve, reject) => {
+	 		if (!payload) {
+	 			reject(Error('Parameter `payload` is required'));
+	 			return;
+	 		}
+	 		if (!jwt) {
+	 			reject(Error('Parameter `jwt` is required'));
+	 			return;	
+	 		}
+	 		if (!deviceToken) {
+	 			reject(Error('Parameter `deviceToken` is required'));
+	 			return;	
+	 		}
+	 		if (!bundleId) {
+	 			reject(Error('Parameter `bundleId` is required'));
+	 			return;	
+	 		}
+	 		const session = http2.connect(this.url);
+	 		const sessionErrorHandler = (error) => {
+	 			session.destroy();
+	 			reject(error);
+	 		}
 
-			session.on('error', sessionErrorHandler);
-			session.on('socketError', sessionErrorHandler);
-			session.on('goaway', sessionErrorHandler);
-			
-			let headers = { 
-				':path': `/3/device/${deviceToken}`,
-				':method': 'POST',
-				'authorization': `bearer ${jwt}`,
-				'apns-topic': bundleId
-			};
+	 		session.on('error', sessionErrorHandler);
+	 		session.on('socketError', sessionErrorHandler);
+	 		session.on('goaway', sessionErrorHandler);
 
-			if (options) {
-				if (options.id) { headers['apns-id'] = options.id; }
-				if (options.expiration) { headers['apns-expiration'] = options.expiration; }
-				if (options.priority) { headers['apns-priority'] = options.priority; }
-				if (options.collapseId) { headers['apns-collapse-id'] = options.collapseId; }
-			}
+	 		let headers = { 
+	 			':path': `/3/device/${deviceToken}`,
+	 			':method': 'POST',
+	 			'authorization': `bearer ${jwt}`,
+	 			'apns-topic': bundleId
+	 		};
 
-			const req = session.request(headers);
-			
-			req.on('aborted', error => {
-				req.close();
-				sessionErrorHandler(error);
-			});
+	 		if (options) {
+	 			if (options.id) { headers['apns-id'] = options.id; }
+	 			if (options.expiration) { headers['apns-expiration'] = options.expiration; }
+	 			if (options.priority) { headers['apns-priority'] = options.priority; }
+	 			if (options.collapseId) { headers['apns-collapse-id'] = options.collapseId; }
+	 		}
 
-			req.on('response', (headers, flags) => {
-				switch(headers[':status']) {
-					case 200: {
-						let data = '';
-		        		req.on('data', chunk => { data += chunk; }).on('end', () => {
-		             		try {
-		               			const response = {
-		               				response: data,
-		               				apnsId: headers['apns-id']
-		               			};
-		               			resolve(response);
-		             		} catch (err) { 
-		             			reject(err); 
-		             		} finally { 
-		             			session.destroy(); 
-		             		}
-			           });
-			           break;
-					}
-					case 400: {
-						reject(new Error(`Bad request`));
-						break;
-					}
-					case 403: {
-						reject(new Error(`There was an error with the certificate or with the provider’s authentication token.`));
-						break;
-					}
-					case 405: {
-						reject(new Error(`The request used an invalid :method value. Only POST requests are supported.`));
-						break;
-					}
-					case 410: {
-						reject(new Error(`The device token is no longer active for the topic.`));
-						break;
-					}
-					case 413: {
-						reject(new Error(`The notification payload was too large.`));
-						break;
-					}
-					case 429: {
-						reject(new Error(`The server received too many requests for the same device token.`));
-						break;
-					}
-					case 500: {
-						reject(new Error(`Internal server error.`));
-						break;
-					}
-					case 500: {
-						reject(new Error(`The server is shutting down and unavailable.`));
-						break;
-					}
-					default: new Error(`Remote server responded with error code ${headers[':status']}`); 
-					break;
-				}
-				req.close();
-				session.destroy();
-			});
-			const postbody = querystring.stringify(payload);
-	      	req.end(postbody);
-		});
-	}
+	 		const req = session.request(headers);
+
+	 		req.on('aborted', error => {
+	 			req.close();
+	 			sessionErrorHandler(error);
+	 		});
+
+	 		req.on('response', (headers, flags) => {
+	 			let data = '';
+	 			req.on('data', chunk => { data += chunk; }).on('end', () => {
+	 				if (headers[":status"] === 200) {
+	 					resolve({
+	 						"status": 200,
+	 						"apns-id": headers['apns-id']
+	 					});
+	 				} else {
+	 					data = JSON.parse(data);
+	 					let error = undefined;
+	 					let errorText = this.ERRORS[headers[":status"]];
+	 					if (errorText) {
+	 						error = new Error(errorText);
+	 						error.reason = data.reason;
+	 						error["apns-id"] = headers["apns-id"];
+	 					} else {
+	 						error = new Error(`Remote server responded with error code ${headers[':status']}`)
+	 					}
+	 					reject(error);
+	 				}
+	 				session.destroy();
+	 			});
+	 		});
+	 		const postbody = querystring.stringify(payload);
+	 		req.end(postbody);
+	 	});
+	 }
 
 	/**
 	 * Create a new JWT according to the APNS specifications.
@@ -152,43 +137,43 @@ module.exports = class ApplePush {
 	 * @return {Promise} A Promise that resolves with the JWT 
 	 * or rejects if there was an error
 	 */
-	createToken(teamId, keyId, key) {
-		return new Promise((resolve, reject) => {
-			if (!teamId) {
-				reject( new Error('Parameter `teamId` is required') );
-				return;
-			}
+	 createToken(teamId, keyId, key) {
+	 	return new Promise((resolve, reject) => {
+	 		if (!teamId) {
+	 			reject( new Error('Parameter `teamId` is required') );
+	 			return;
+	 		}
 
-			if (!keyId) {
-				reject( new Error('Parameter `keyId` is required') );
-				return;
-			}
+	 		if (!keyId) {
+	 			reject( new Error('Parameter `keyId` is required') );
+	 			return;
+	 		}
 
-			if (!key || key.trim() === "") {
-				reject( new Error('Parameter `key` is required') );
-				return;
-			}
+	 		if (!key || key.trim() === "") {
+	 			reject( new Error('Parameter `key` is required') );
+	 			return;
+	 		}
 
-			let signingOptions = {
-				issuer: teamId,
-				algorithm: 'ES256',
-				header: {
-					kid: keyId
-				}
-			};
-			jwt.sign({}, key, signingOptions, (err, token) => {
-				if (err) {
-					reject(err);
-				} else {
-					try {
-						const result = token;
-						resolve(result);
-					} catch(error) {
-						reject(error);
-					}
-				}
-			});
-		});
+	 		let signingOptions = {
+	 			issuer: teamId,
+	 			algorithm: 'ES256',
+	 			header: {
+	 				kid: keyId
+	 			}
+	 		};
+	 		jwt.sign({}, key, signingOptions, (err, token) => {
+	 			if (err) {
+	 				reject(err);
+	 			} else {
+	 				try {
+	 					const result = token;
+	 					resolve(result);
+	 				} catch(error) {
+	 					reject(error);
+	 				}
+	 			}
+	 		});
+	 	});
+	 }
+
 	}
-
-}
